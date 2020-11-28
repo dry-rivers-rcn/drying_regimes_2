@@ -19,10 +19,10 @@ library(readxl)
 library(sf)
 library(raster)
 library(riverdist)
+library(parallel)
 library(leaflet)
 library(xts)
 library(htmlwidgets)
-
 
 #create temp workspace
 file.create("data/temp")
@@ -59,17 +59,20 @@ streams<-streams %>% st_transform(., crs=st_crs(p)) %>% st_zm()
 sheds<-sheds %>% st_transform(., crs=st_crs(p)) %>% st_zm()
 
 #2.5 Create list of HUC12 sheds
-HUC8<-sheds %>% st_drop_geometry() %>% select(HUC_8) %>% unique()
-
-
+HUC8<-sheds %>% st_drop_geometry() %>% dplyr::select(HUC_8) %>% unique()
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #3.0 Create fun to estimate river distances-------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Create function
+#3.1 Create function -----------------------------------------------------------
 fun<-function(n){
   
   #Organize Data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #Load required packages
+  library(tidyverse)
+  library(sf)
+  library(riverdist)
+  
   #Define shed of interest
   sheds_temp<-sheds %>% filter(HUC_8==HUC8$HUC_8[n])
   
@@ -78,59 +81,65 @@ fun<-function(n){
   sites_temp<-sites[sheds_temp,]
   streams_temp<-streams[sheds_temp,]
   
-  #Create a temp folder
-  temp_file<-tempdir()
-  file.create(temp_file)
-  
-  #Export files to temp folder
-  st_write(streams_temp, paste0(temp_file,"\\streams.shp"), delete_dsn = T)
-  
-  #Prep network data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Create network file
-  rivs <- line2network(path=temp_file, layer="streams")
-  
-  #save network 
-  save(rivs, file = paste0(temp_file, "\\riv.rda"))
-  
-  #Prep sampling points~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Gages
-  gages_temp$x<-st_coordinates(gages_temp)[,1]
-  gages_temp$y<-st_coordinates(gages_temp)[,2]
-  gages_snap<-xy2segvert(x=gages_temp$x, y=gages_temp$y, rivers=rivs)
-    
-  #sites
-  sites_temp$x<-st_coordinates(sites_temp)[,1]
-  sites_temp$y<-st_coordinates(sites_temp)[,2]
-  site_snap<-xy2segvert(x=sites_temp$x, y=sites_temp$y, rivers=rivs)
-    
   #Create list of site ids
   site_id<-sites_temp$StationCode
+
+  #Create a temp folder
+  temp_file<-tempdir()
+  dir.create(temp_file)
   
-  #Define distance
-  t0<-Sys.time()
-  output<-riverdistancetofrom(
-    seg1 = site_snap$seg,
-    vert1 = site_snap$vert,
-    seg2 = gages_snap$seg,
-    vert2 = gages_snap$vert,
-    rivers = rivs,
-    ID1= site_id,
-    ID2=gages_temp$STAID,
-    stopiferror = F
-  )
-  tf<-Sys.time()
-  tf-t0
+  #Estimate distance between sites and gages
+  #Initiate if statement
+  if(nrow(gages_temp)>0){
+    #Export files to temp folder
+    st_write(streams_temp, paste0(temp_file,"\\streams.shp"), delete_dsn = T)
+    
+    #Create flow network file
+    rivs <- line2network(path=temp_file, layer="streams")
+    
+    #save flow network 
+    save(rivs, file = paste0(temp_file, "\\riv.rda"))
+    
+    #Define x and y locations
+    gages_temp$x<-st_coordinates(gages_temp)[,1]
+    gages_temp$y<-st_coordinates(gages_temp)[,2]
+    sites_temp$x<-st_coordinates(sites_temp)[,1]
+    sites_temp$y<-st_coordinates(sites_temp)[,2]
+    
+    #Snap points to flow network
+    gages_snap<-xy2segvert(x=gages_temp$x, y=gages_temp$y, rivers=rivs)
+    site_snap<-xy2segvert(x=sites_temp$x, y=sites_temp$y, rivers=rivs)
+    
+    #Run riverdistance fun
+    output<-riverdistancetofrom(
+      seg1 = site_snap$seg,
+      vert1 = site_snap$vert,
+      seg2 = gages_snap$seg,
+      vert2 = gages_snap$vert,
+      rivers = rivs,
+      ID1= site_id,
+      ID2=gages_temp$STAID,
+      stopiferror = F)
   
-  #Find shortest distance for each location
-  output<-output %>% 
-    #Create tibble
-    as_tibble(rownames = 'site_id') %>% 
-    #pivot longer
-    pivot_longer(-site_id, names_to = "gage_id", values_to = "dist_m") %>% 
-    #Find shortest dist by gage
-    group_by(site_id) %>% 
-    slice(which.min(dist_m))
-  
+    #Find shortest distance for each location
+    output<-output %>% 
+      #Create tibble
+      as_tibble(rownames = 'site_id') %>% 
+      #pivot longer
+      pivot_longer(-site_id, names_to = "gage_id", values_to = "dist_m") %>% 
+      #Find shortest dist by gage
+      group_by(site_id) %>% 
+      slice(which.min(dist_m))  
+    
+  #Initiate else statement
+  }else{
+    #Create alternative output 
+    output<-tibble(
+      site_id = site_id, 
+      gage_id = NA, 
+      dist_m = NA)
+  }
+
   #remove temp file
   unlink(temp_file)
     
@@ -138,10 +147,39 @@ fun<-function(n){
   output
 }
 
-#Test function
-t0<-Sys.time()
-test<-fun(1)
-tf<-Sys.time()
+#3.2 Execute function in parallel-----------------------------------------------
+#Create error function
+execute<-function(m){
+  output<-tryCatch(
+    fun(m), 
+    error = function(e){
+      tibble(
+        site_id = m, 
+        gage_id = NA, 
+        dist_m = NA)
+      })
+  #Export
+  output
+}
+
+#Detect number of cores
+n_cores<-detectCores()-1
+
+#Create Cores
+cl<-makeCluster(n_cores)
+
+#Export relevant datasets to all cores
+clusterExport(cl, c('gages', 'HUC8', 'sheds', 'sites','streams', 'fun'))
+
+#Execute function!
+x<-parLapply(
+  cl = cl, 
+  X = seq(1,nrow(HUC8)),
+  fun = execute
+)
+
+#stop clusters
+stopCluster(cl)
 
 # Code graveyard ---------------------------------------------------------------
 # #2.3 Creat 1 km buffer around gages and overlay~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
