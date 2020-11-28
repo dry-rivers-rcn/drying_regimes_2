@@ -1,8 +1,8 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Title: Initial Map
+#Title: Distance to Gage
 #Coder: Nate Jones (cnjones7@ua.edu)
 #Date: 11/20/2020
-#Purpose: Exploratory Analysis  
+#Purpose: Explore distance to USGS Gage sites
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #Helpful link: http://ryanpeek.org/2017-11-21-mapping-with-sf-part-3/
@@ -28,10 +28,13 @@ library(htmlwidgets)
 file.create("data/temp")
 
 #download files of interest
-sites<-read_xlsx("data/sites_CA_ALL_Stations.xlsx")
+sites<-read_xlsx("data/CA_Data/sites_CA_ALL_Stations.xlsx")
 gages<-st_read('data/spatial_data/gagesII/gagesII_9322_sept30_2011.shp')
 streams<-st_read('data/spatial_data/NHDPlus18/Hydrography/NHDFlowline.shp')
 sheds<-st_read('data/spatial_data/NHDPlus18/WBD/WBD_Subwatershed.shp')
+biogeo<-read_csv('data/CA_Data/nutrients_111220request.csv')
+phab_metrics<-read_csv('data/CA_Data/phab_metrics_111220request.csv')
+phab_ibi<-read_csv("data/CA_Data/phab_ipi_111220request.csv")
 
 #Define master projection
 p<-"+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
@@ -161,7 +164,6 @@ output
 
 }
  
-
 #3.2 Execute function in parallel-----------------------------------------------
 #Create error function
 execute<-function(m){
@@ -169,7 +171,7 @@ execute<-function(m){
     fun(m), 
     error = function(e){
       tibble(
-        site_id = m, 
+        site_id = as.character(m), 
         gage_id = NA, 
         dist_m = NA)
       })
@@ -199,92 +201,20 @@ tf-t0
 #stop clusters
 stopCluster(cl)
 
-# Code graveyard ---------------------------------------------------------------
+#3.3 Tidy Data -----------------------------------------------------------------
+df<-x %>% 
+  #unlist
+  bind_rows() %>% 
+  #Find unique combos
+  group_by(site_id) %>% 
+  slice(which.min(dist_m)) %>% 
+  #Filter to less than 5 km
+  #filter(dist_m<5000) %>% 
+  #Rename
+  rename(
+    closest_gage = gage_id, 
+    gage_riv_dist_m = dist_m
+  )
 
+write_csv(df, "docs/ca_sites_riv_dist_to_gage.csv")
 
-
-# fun<-function(n){
-#   
-#   #Organize Data ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#   #Load required packages
-#   library(tidyverse)
-#   library(sf)
-#   library(riverdist)
-#   
-#   #Define shed of interest
-#   sheds_temp<-sheds %>% filter(HUC_8==HUC8$HUC_8[n])
-#   
-#   #Subset remaining spatial data
-#   gages_temp<-gages[sheds_temp,]
-#   sites_temp<-sites[sheds_temp,]
-#   streams_temp<-streams[sheds_temp,]
-#   
-#   #Subset sites to within 5 km buffer
-#   gages_buffer<-st_buffer(gages_temp, 5000)
-#   sites_temp<-sites_temp[gages_buffer,]
-#   
-#   #Create list of site ids
-#   site_id<-sites_temp$StationCode
-#   
-#   #Create a temp folder
-#   temp_file<-tempdir()
-#   dir.create(temp_file)
-#   
-#   #Estimate distance between sites and gages
-#   #Initiate if statement
-#   if(nrow(gages_temp)>0){
-#     #Export files to temp folder
-#     st_write(streams_temp, paste0(temp_file,"\\streams.shp"), delete_dsn = T)
-#     
-#     #Create flow network file
-#     rivs <- line2network(path=temp_file, layer="streams", tolerance = 1)
-#     
-#     #save flow network 
-#     save(rivs, file = paste0(temp_file, "\\riv.rda"))
-#     
-#     #Define x and y locations
-#     gages_temp$x<-st_coordinates(gages_temp)[,1]
-#     gages_temp$y<-st_coordinates(gages_temp)[,2]
-#     sites_temp$x<-st_coordinates(sites_temp)[,1]
-#     sites_temp$y<-st_coordinates(sites_temp)[,2]
-#     
-#     #Snap points to flow network
-#     gages_snap<-xy2segvert(x=gages_temp$x, y=gages_temp$y, rivers=rivs)
-#     site_snap<-xy2segvert(x=sites_temp$x, y=sites_temp$y, rivers=rivs)
-#     
-#     #Run riverdistance fun
-#     output<-riverdistancetofrom(
-#       seg1 = site_snap$seg,
-#       vert1 = site_snap$vert,
-#       seg2 = gages_snap$seg,
-#       vert2 = gages_snap$vert,
-#       rivers = rivs,
-#       ID1= site_id,
-#       ID2=gages_temp$STAID,
-#       stopiferror = F)
-#     
-#     #Find shortest distance for each location
-#     output<-output %>% 
-#       #Create tibble
-#       as_tibble(rownames = 'site_id') %>% 
-#       #pivot longer
-#       pivot_longer(-site_id, names_to = "gage_id", values_to = "dist_m") %>% 
-#       #Find shortest dist by gage
-#       group_by(site_id) %>% 
-#       slice(which.min(dist_m))  
-#     
-#     #Initiate else statement
-#   }else{
-#     #Create alternative output 
-#     output<-tibble(
-#       site_id = site_id, 
-#       gage_id = NA, 
-#       dist_m = NA)
-#   }
-#   
-#   #remove temp file
-#   unlink(temp_file)
-#   
-#   #Export output
-#   output
-# }
