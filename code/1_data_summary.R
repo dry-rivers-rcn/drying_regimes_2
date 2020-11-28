@@ -294,7 +294,7 @@ labels_gages<-sprintf(
   lapply(htmltools::HTML)
 
 #Create map
-leaflet(sites) %>% 
+m<-leaflet(sites) %>% 
   #Add Basemaps
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>% 
   addTiles(group = "Streets Map") %>%
@@ -321,6 +321,8 @@ leaflet(sites) %>%
   addLayersControl(baseGroups = c("Aerial", "Streets Map"), 
                    overlayGroups = c("CA State Sites",
                                      "USGS Gages"))
+
+saveWidget(m, file="ca_data_summary.html")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #5.0 Sites ---------------------------------------------------------------------
