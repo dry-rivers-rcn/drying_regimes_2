@@ -36,6 +36,19 @@ biogeo<-read_csv('data/CA_Data/nutrients_111220request.csv')
 phab_metrics<-read_csv('data/CA_Data/phab_metrics_111220request.csv')
 phab_ibi<-read_csv("data/CA_Data/phab_ipi_111220request.csv")
 
+## with full data dump (01/11)
+sites<-read.csv("data/BMI_Stations_FULL/StationInfo_forBMIstations_12222020.csv")
+
+gages<-st_read('data/spatial_data/gagesII/gagesII_9322_sept30_2011.shp')
+streams<-st_read('data/spatial_data/NHDPlus18/Hydrography/NHDFlowline.shp')
+sheds<-st_read('data/spatial_data/NHDPlus18/WBD/WBD_Subwatershed.shp')
+
+chem<-read.csv('data/BMI_Stations_FULL/Chem_forBMIstations_12222020.csv')
+phab_metrics<-read.csv('data/BMI_Stations_FULL/PHABmetrics_forBMIstations_12222020.csv')
+phab_ipi<-read.csv("data/BMI_Stations_FULL/IPI_forBMIstations_12222020.csv")
+csci<-read.csv("data/BMI_Stations_FULL/CSCI_forBMIstations_12222020.csv")
+bmitax<-read.csv("data/BMI_Stations_FULL/BMItaxonomy_forBMIstations_12222020.csv")
+
 #Define master projection
 p<-"+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
 
