@@ -27,16 +27,16 @@ library(htmlwidgets)
 #create temp workspace
 file.create("data/temp")
 
-#download files of interest
-sites<-read_xlsx("data/CA_Data/sites_CA_ALL_Stations.xlsx")
-gages<-st_read('data/spatial_data/gagesII/gagesII_9322_sept30_2011.shp')
-streams<-st_read('data/spatial_data/NHDPlus18/Hydrography/NHDFlowline.shp')
-sheds<-st_read('data/spatial_data/NHDPlus18/WBD/WBD_Subwatershed.shp')
-biogeo<-read_csv('data/CA_Data/nutrients_111220request.csv')
-phab_metrics<-read_csv('data/CA_Data/phab_metrics_111220request.csv')
-phab_ibi<-read_csv("data/CA_Data/phab_ipi_111220request.csv")
+# #download files of interest
+# sites<-read_xlsx("data/CA_Data/sites_CA_ALL_Stations.xlsx")
+# gages<-st_read('data/spatial_data/gagesII/gagesII_9322_sept30_2011.shp')
+# streams<-st_read('data/spatial_data/NHDPlus18/Hydrography/NHDFlowline.shp')
+# sheds<-st_read('data/spatial_data/NHDPlus18/WBD/WBD_Subwatershed.shp')
+# biogeo<-read_csv('data/CA_Data/nutrients_111220request.csv')
+# phab_metrics<-read_csv('data/CA_Data/phab_metrics_111220request.csv')
+# phab_ibi<-read_csv("data/CA_Data/phab_ipi_111220request.csv")
 
-## with full data dump (01/11)
+## with full data dump from Rafi (01/11)
 sites<-read.csv("data/BMI_Stations_FULL/StationInfo_forBMIstations_12222020.csv")
 
 gages<-st_read('data/spatial_data/gagesII/gagesII_9322_sept30_2011.shp')
@@ -48,6 +48,9 @@ phab_metrics<-read.csv('data/BMI_Stations_FULL/PHABmetrics_forBMIstations_122220
 phab_ipi<-read.csv("data/BMI_Stations_FULL/IPI_forBMIstations_12222020.csv")
 csci<-read.csv("data/BMI_Stations_FULL/CSCI_forBMIstations_12222020.csv")
 bmitax<-read.csv("data/BMI_Stations_FULL/BMItaxonomy_forBMIstations_12222020.csv")
+# file very large, can be found in google drive as zip file
+  # not really sure what this file tells you, who updated file, lat and long, when sampled?
+phabitat <- read.csv("C:/Users/mhope/Downloads/data_request_PHAB_12222020/PHAB_forBMIstations_12222020.csv")
 
 #Define master projection
 p<-"+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
@@ -56,9 +59,9 @@ p<-"+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datu
 #2.0 Prep Spatial Data----------------------------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #2.1 Convert sites to spatial layer 
-sites<-st_as_sf(
+sites.sp<-st_as_sf(
   sites, 
-  coords = c('TargetLongitude', 'TargetLatitude'), 
+  coords = c('longitude', 'latitude'), 
   crs = st_crs("+proj=longlat +ellps=GRS80 +datum=NAD83 +no_defs")) %>% 
   #Reproject
   st_transform(., crs=st_crs(p))
@@ -81,19 +84,19 @@ HUC8<-sheds %>% st_drop_geometry() %>% dplyr::select(HUC_8) %>% unique()
 #3.0 Subset Spatial Data--------------------------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Create Master ID list
-masterid<-sites %>% st_drop_geometry() %>% dplyr::select(site_id = StationCode)
+masterid<-sites.sp %>% st_drop_geometry() %>% dplyr::select(site_id = masterid)
 
 #create tibble of yes/no for biogeo data
-biogeo<-biogeo %>% 
+chem.01<-chem %>% 
   dplyr::select(masterid) %>% 
   distinct() %>% 
   rename(site_id = masterid) %>% 
-  mutate(biogeo = 1) %>% 
+  mutate(chem = 1) %>% 
   left_join(masterid, .) %>% 
-  mutate(biogeo = replace_na(biogeo, 0))
+  mutate(chem = replace_na(chem, 0))
 
 #create tibble of yes/no for phab data
-phab_metrics<-phab_metrics %>% 
+phab_metrics.01<-phab_metrics %>% 
   dplyr::select(masterid) %>% 
   distinct() %>% 
   rename(site_id = masterid) %>% 
@@ -102,7 +105,7 @@ phab_metrics<-phab_metrics %>%
   mutate(phab_metrics = replace_na(phab_metrics, 0))
 
 #create tibble of yes/no for phab data
-phab_ibi<-phab_ibi %>% 
+phab_ipi.01<-phab_ipi %>% 
   dplyr::select(masterid) %>% 
   distinct() %>% 
   rename(site_id = masterid) %>% 
@@ -110,16 +113,37 @@ phab_ibi<-phab_ibi %>%
   left_join(masterid, .) %>% 
   mutate(phab_ibi = replace_na(phab_ibi, 0))
 
+#create tibble of yes/no for bmi data
+bmitax.01<-bmitax %>% 
+  dplyr::select(masterid) %>% 
+  distinct() %>% 
+  rename(site_id = masterid) %>% 
+  mutate(bmitax = 1) %>% 
+  left_join(masterid, .) %>% 
+  mutate(bmitax = replace_na(bmitax, 0))
+
+#create tibble of yes/no for csci metric
+csci.01<-csci %>% 
+  dplyr::select(masterid) %>% 
+  distinct() %>% 
+  rename(site_id = masterid) %>% 
+  mutate(csci = 1) %>% 
+  left_join(masterid, .) %>% 
+  mutate(csci = replace_na(csci, 0))
+
 #Join to sites file
 sites<-sites %>% 
-  dplyr::select(site_id = StationCode) %>% 
-  left_join(., biogeo) %>% 
+  dplyr::select(site_id = masterid) %>% 
+  left_join(., chem) %>% 
   left_join(., phab_metrics) %>% 
-  left_join(., phab_ibi)
+  left_join(., phab_ipi) %>% 
+  left_join(., bmitax) %>% 
+  left_join(., csci)
 
 #Sum points
+sites$tots = sites$biogeo + sites$phab_metrics + sites$phab_ibi + sites$bmitax + sites$csci
+
 sites<-sites %>% 
-  mutate(tots = biogeo + phab_metrics + phab_ibi) %>% 
   #filter gages
   filter(tots>0) %>% 
   dplyr::select(-tots)
@@ -282,7 +306,7 @@ sites<-left_join(sites, df)
 #4.0 Mapping -------------------------------------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Convert to coordinate system
-sites <- sites %>% st_transform(.,crs=4326)
+sites.sp <- sites.sp %>% st_transform(.,crs=4326)
 gages <- gages %>% st_transform(.,crs=4326)
 streams <- streams %>% st_transform(., crs=4326)
 
@@ -292,11 +316,13 @@ labels_sites <- sprintf(
      <br/>Site ID = %s
      <br/>Closest USGS Gage = %s 
      <br/>River Distance to gage = %g km
-     <br/>Biogeochem Data = %g
+     <br/>Chem Data = %g
      <br/>Physical Habitat (metrics) = %g
-     <br/>Physical Habitat (ibi) = %g",
+     <br/>Physical Habitat (ibi) = %g
+     <br/>BMI Taxon = %g
+     <br/>CSCI = %g",
     sites$site_id, sites$closest_gage, round(sites$gage_riv_dist_m/1000,1), 
-    sites$biogeo, sites$phab_metrics, sites$phab_ibi) %>% 
+    sites$biogeo, sites$phab_metrics, sites$phab_ibi, sites$bmitax, sites$csci) %>% 
   lapply(htmltools::HTML)
 
 labels_gages<-sprintf(
@@ -307,7 +333,7 @@ labels_gages<-sprintf(
   lapply(htmltools::HTML)
 
 #Create map
-m<-leaflet(sites) %>% 
+m<-leaflet(sites.sp) %>% 
   #Add Basemaps
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>% 
   addTiles(group = "Streets Map") %>%
@@ -341,6 +367,6 @@ saveWidget(m, file="ca_data_summary.html")
 #5.0 Sites ---------------------------------------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Export Sites
-sites %>% st_drop_geometry() %>% write_csv(., "docs/ca_data_summary.csv")
+sites.sp %>% st_drop_geometry() %>% write_csv(., "docs/ca_data_summary.csv")
 
 
