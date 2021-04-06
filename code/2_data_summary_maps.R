@@ -50,10 +50,12 @@ short_record<-short_record %>%
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #3.0 Mapping -------------------------------------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Set mime type
+mapviewOptions(fgb=FALSE)
 #Add mapview
-m<-mapview(short_record,col.regions="dark blue", alpha.regions=0.9) +
+m<-mapview(short_record,col.regions="dark blue", alpha.regions=0.9)+
   mapview(long_record,col.regions="dark orange", alpha.regions=0.9)
 
 #export map
-setwd("docs/")
-mapshot(m, "data_summary.html")
+mapshot(m, "sites2.html")
+
