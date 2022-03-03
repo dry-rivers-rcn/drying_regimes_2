@@ -60,10 +60,12 @@ p = p + geom_point(data = df,
                aes(x=dateTime,y=waterLevel),
                alpha = df$nf_start,
                color="red")
-
+p
 
 #Recession metrics~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-recession_fun<-function(m){
+
+m = 2
+recession_fun<-function(m)
   #Isolate indivdual recession events
   t<-df %>% filter(event_id == m) 
   
@@ -72,8 +74,8 @@ recession_fun<-function(m){
   
   #Compute drying regime stats if the following conditions exist
   if(sum(t$nf_start, na.rm=T)!=0 & #there is a dry period in this event
-     t$q[1]!=0 &                   #the event dosn't start with q=0
-     sum(t$q_peak)!=0){            #there is no peak value     
+     t$waterLevel[1]!=0 &                   #the event dosn't start with waterLevel=0
+     sum(t$waterLevel_peak)!=0){            #there is no peak value     
     
     #Define recession event as the length of time between peak and longest dry 
     #    event before the next peak. 
@@ -82,7 +84,7 @@ recession_fun<-function(m){
       #Number drying events
       mutate(dry_event_id = cumsum(nf_start)) %>% 
       #Remove id number when > 0
-      mutate(dry_event_id = if_else(q>0, 0, dry_event_id)) 
+      mutate(dry_event_id = if_else(waterLevel>0, 0, dry_event_id)) 
     
     #Define dry date as the start of the longest drying event
     dry_date <- t %>% 
@@ -106,15 +108,15 @@ recession_fun<-function(m){
     
     #Define Peak Data
     peak_date <- as.POSIXlt(t$date[1], "%Y-%m-%d")$yday[1]
-    peak_value <- t$q[1]
-    peak_quantile <- ecdf(df$q)(peak_value)
+    peak_value <- t$waterLevel[1]
+    peak_quantile <- ecdf(df$waterLevel)(peak_value)
     
     #Define Peak to zero metric
     peak2zero <- nrow(t)
     
     #Create linear model of dQ vs q
-    t<- t %>% mutate(dQ = lag(q) - q) %>% filter(dQ>=0)
-    model<-lm(log10(dQ+0.1)~log10(q+0.1), data=t)
+    t<- t %>% mutate(dwaterLevel = lag(waterLevel) - waterLevel) %>% filter(dwaterLevel>=0)
+    model<-lm(log10(dwaterLevel+0.1)~log10(waterLevel+0.1), data=t)
     
     #Estimate drying rate [note the error catch for low slopes]
     drying_rate <- tryCatch(model$coefficients[2], error = function(e) NA)
