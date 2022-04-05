@@ -14,7 +14,10 @@ remove(list=ls())
 #Load libraries of interest
 library(tidyverse)
 library(zoo)
+library(lubridate)
 library(readxl)
+library(xts)
+library(dygraphs)
 
 ################################################################################
 #2.0 Download data by sheet ----------------------------------------------------
@@ -56,15 +59,40 @@ waterLevel<-bind_rows(waterLevel)
 #Create vector of unqiue site names
 sites<-waterLevel %>% select(site_id) %>% distinct() %>% pull()
 
-#plot
-waterLevel %>% 
-  ggplot(aes(x=datetime, y=waterLevel)) +
-    geom_line() + 
-      facet_wrap(vars(site_id))
+################################################################################
+#3.0 Plot with dygraphs function-----------------------------------------------
+################################################################################
+dygraph_ts_fun<-function(df, site){
+  
+  #Select collumns of interest
+  df <- df %>%
+    mutate(waterLevel = waterLevel*100) %>% 
+    filter(site_id == site)
+  
+  #format data
+  df_xts<-df %>% na.omit() 
+  df_xts<-xts(df_xts, order.by=df_xts$datetime)
+  df_xts<-df_xts[,-1]
+  
+  #Plot
+  dygraph(df_xts) %>%
+    dyRangeSelector() %>%
+    dyLegend() %>%
+    dyOptions(strokeWidth = 1.5) %>%
+    dyOptions(labelsUTC = TRUE) %>%
+    dyHighlight(highlightCircleSize = 5,
+                highlightSeriesBackgroundAlpha = 0.2,
+                hideOnMouseOut = FALSE) %>%
+    dyAxis("y", label = "Variable")
+}
+
+#Plot
+dygraph_ts_fun(df = waterLevel, site=sites[1])
+dygraph_ts_fun(df = waterLevel, site=sites[2])
 
 
 ################################################################################
-#3.0 Estimate hydro metrics ----------------------------------------------------
+#4.0 Estimate hydro metrics ----------------------------------------------------
 ################################################################################
 #3.1 Create metrics function ---------------------------------------------------
 metrics_fun<-function(n){
@@ -80,7 +108,10 @@ metrics_fun<-function(n){
   df<- df %>% na.omit()
   
   #Order by date
-  df %>% arrange(datetime)
+  df<-df %>% arrange(datetime)
+  
+  #Normalize waterLevel to 0 to 1
+  df<-df %>% mutate(waterLevel = waterLevel/max(waterLevel,na.rm=T))
   
   #Create filters to define initiation of flow and no flow
   df<-df %>% 
@@ -129,16 +160,24 @@ metrics_fun<-function(n){
     #Estimate center of mass for flow 
     t_daily <- t_daily %>% 
       mutate(d = day - min(day))
-    flow_centroid<-min(t_daily$day) + weighted.mean(t_daily$d, t_daily$waterLevel)
+    flow_centroid_date<-min(t_daily$day) + weighted.mean(t_daily$d, t_daily$waterLevel)
     
     #Estimate 30 day no-flow from moving window
-    no_flow_date<-t %>% 
+    first_no_flow_date<-t %>% 
       select(datetime, wL_drying) %>% 
       filter(wL_drying==0) %>% 
       filter(row_number()==1) %>% 
       select(datetime) %>% 
       mutate(datetime = date(datetime)) %>%
       pull()
+    
+    #Estimate Peak date
+    peak_flow_date<- t %>% 
+      filter(waterLevel == max(waterLevel, na.rm=T)) %>% 
+      select(datetime) %>% 
+      mutate(datetime = date(datetime)) %>%
+      pull()
+    
     
     #duration metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     no_flow_duration_days = t_daily %>% filter(waterLevel==0) %>% nrow()
@@ -147,10 +186,28 @@ metrics_fun<-function(n){
     
     #magnitude of drying ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #estimate peak2zero
-    peak2zero_days<-as.numeric(paste(date(no_flow_date) - date(flow_centroid)))
+    peak2zero_days<-t %>% 
+      filter(datetime>date(peak_flow_date)) %>% 
+      select(datetime, wL_drying) %>% 
+      filter(wL_drying==0) %>% 
+      filter(row_number()==1) %>% 
+      select(datetime) %>% 
+      mutate(datetime = date(datetime)) %>%
+      pull()
+    peak2zero_days<-as.numeric(paste(peak2zero_days - date(peak_flow_date)))
+      
+    #estimate centroid2zero
+    centoid2zero_days<-t %>% 
+      filter(datetime>date(flow_centroid_date)) %>% 
+      select(datetime, wL_drying) %>% 
+      filter(wL_drying==0) %>% 
+      filter(row_number()==1) %>% 
+      select(datetime) %>% 
+      mutate(datetime = date(datetime)) %>%
+      pull()
+    centoid2zero_days<-as.numeric(paste(centoid2zero_days - date(flow_centroid_date)))
     
     #recession
-    peak_wL <-  max(t$wL_quant, na.rm=T)
     recession <- max(t$wL_quant, na.rm=T)/peak2zero_days
     
     #flashiness ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,14 +220,15 @@ metrics_fun<-function(n){
     #Export output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     output<-tibble(
       event_id = m, 
-      flow_centroid, 
-      no_flow_date,
+      flow_centroid_date, 
+      peak_flow_date,
+      first_no_flow_date,
       no_flow_duration_days, 
       flow_duration_days, 
       no_flow_prop,
       flashiness,
-      peak_wL,
-      peak2zero_days, 
+      peak2zero_days,
+      centoid2zero_days,
       recession)
     
     output
