@@ -263,4 +263,4 @@ sites <- sites[-10]
 output<-lapply(seq(1, length(sites)), metrics_fun) %>% bind_rows
 
 #Write output
-write_csv(output, "metrics.csv")
+write_csv(output, "docs/metrics.csv")
