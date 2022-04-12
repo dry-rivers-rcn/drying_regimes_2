@@ -151,6 +151,10 @@ metrics_fun<-function(n){
     t <- t %>% replace_na(list(nf_start=0)) 
     
     #timing metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #Estimate start and end date of each event
+    start_date <- date(min(t$datetime, na.rm=T))
+    end_date   <- date(max(t$datetime, na.rm=T))
+    
     #Estimate daily stage
     t_daily <- t %>% 
       mutate(day = date(datetime)) %>% 
@@ -220,6 +224,8 @@ metrics_fun<-function(n){
     #Export output ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     output<-tibble(
       event_id = m, 
+      start_date, 
+      end_date,
       flow_centroid_date, 
       peak_flow_date,
       first_no_flow_date,
