@@ -90,7 +90,6 @@ dygraph_ts_fun<-function(df, site){
 dygraph_ts_fun(df = waterLevel, site=sites[1])
 dygraph_ts_fun(df = waterLevel, site=sites[2])
 
-
 ################################################################################
 #4.0 Estimate hydro metrics ----------------------------------------------------
 ################################################################################
