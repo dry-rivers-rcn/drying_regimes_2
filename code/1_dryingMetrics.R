@@ -64,8 +64,8 @@ p
 
 #Recession metrics~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-m = 2
-recession_fun<-function(m)
+m = 3
+#recession_fun<-function(m)
   #Isolate indivdual recession events
   t<-df %>% filter(event_id == m) 
   
