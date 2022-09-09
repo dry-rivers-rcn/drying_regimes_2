@@ -1,0 +1,955 @@
+---
+title: "Storm Events"
+author: "Nate Jones"
+date: "2022-09-09"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+## Setup
+
+```{r setup, error=F, warning=F, message=F}
+
+#Setup environment ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Global Options
+knitr::opts_chunk$set(echo = TRUE)
+
+#Clear memory
+remove(list=ls())
+
+#Load libraries of interest
+library(tidyverse)
+library(zoo)
+library(lubridate)
+library(readxl)
+library(xts)
+library(dygraphs)
+library(patchwork)
+
+#Compile waterLevel data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Create function
+download_fun<-function(n){
+  #Download data
+  x <- read_excel(
+    path = "C://WorkspaceR//drying_regimes_2//data//Loflen_Loggers_All_Data.xlsx", 
+    sheet = sheets[n]
+  )
+  
+  #Tidy
+  x <- x %>% 
+    select(
+      datetime = starts_with("date"), 
+      waterLevel = starts_with("water")) %>% 
+    mutate(site_id = sheets[n])
+  
+  #get rid of extra water level collumns
+  if("waterLevel1" %in% colnames(x)){
+    x <- x %>% 
+      rename(waterLevel = waterLevel1) %>% 
+      select(-waterLevel2)
+  }
+  
+  #Export
+  x
+  
+}
+
+#list excel sheets
+sheets <- excel_sheets(path = "C://WorkspaceR//drying_regimes_2//data//Loflen_Loggers_All_Data.xlsx")
+
+#read sampling dates into R environment
+sample_date<-read_csv('C://WorkspaceR//drying_regimes_2//data//biologic_sample_days.csv') %>% rename(site_id = stationcode)
+
+#Apply fun
+waterLevel<-lapply(X=seq(1,length(sheets)), FUN = download_fun)
+waterLevel<-bind_rows(waterLevel)
+
+#Create vector of unqiue site names
+events<-waterLevel %>% 
+  left_join(sample_date) %>% 
+  select(site_id, SampleDate) %>% 
+  distinct() %>% 
+  drop_na()
+
+#Define list of sites
+sites <- events %>% select(site_id) %>% distinct() %>% pull()
+
+#Create data viz functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Interactive Dygraphs 
+dygraph_ts_fun<-function(waterLevel, site){
+  
+  #Select collumns of interest
+  df <- waterLevel %>%
+    mutate(waterLevel = waterLevel*100) %>% 
+    filter(site_id == site)
+  
+  #format data
+  df_xts<-df %>% na.omit() 
+  df_xts<-xts(df_xts, order.by=df_xts$datetime)
+  df_xts<-df_xts[,-1]
+  
+  #Plot
+  dygraph(df_xts) %>%
+    dyRangeSelector() %>%
+    dyLegend() %>%
+    dyOptions(strokeWidth = 1.5) %>%
+    dyOptions(labelsUTC = TRUE) %>%
+    dyHighlight(highlightCircleSize = 5,
+                highlightSeriesBackgroundAlpha = 0.2,
+                hideOnMouseOut = FALSE) %>%
+    dyAxis("y", label = "Variable")
+}
+
+#Static plot
+#Identify site of interest
+event_plot_fun<-function(site_id, drying_events){
+
+  #Identify site
+  s <- site_id
+  
+  #Identify sampling events of interest
+  e <- drying_events %>% 
+    mutate(SampleDate = as.POSIXct(SampleDate, format = '%m/%d/%Y'))
+  
+  #Identify drying events
+  drying_events <- drying_events %>% 
+    mutate(
+      SampleDate = as.POSIXct(SampleDate, format = '%m/%d/%Y'),
+      StartEvent = as.POSIXct(StartEvent, format = '%m/%d/%Y'), 
+      EndEvent  =  as.POSIXct(EndEvent , format = '%m/%d/%Y')
+    )
+  
+  #Create Plot
+  waterLevel %>% 
+    filter(site_id == s) %>%  
+    ggplot() + 
+      geom_rect(
+        data=drying_events, 
+        aes(
+          xmin = StartEvent, 
+          xmax = EndEvent, 
+          ymin = 0,
+          ymax = Inf), 
+        alpha = 0.3) +
+      geom_vline(
+        data = e,
+        mapping = aes(xintercept=SampleDate), 
+        lty = 2, 
+        lwd = 1.2,
+        col = "red") + 
+      geom_line(aes(x=datetime, y = waterLevel)) + 
+    theme_bw() + 
+    theme(
+      axis.title.y = element_text(size = 14), 
+      axis.text.y  = element_text(size = 10)
+    ) + 
+    #Add labels
+    xlab(NULL) + 
+    ylab("Stage [m]") +
+    ggtitle(paste(s, drying_events$SampleDate[1]))
+}
+
+
+```
+
+## 901BELOLV
+
+```{r error= F, warning= F}
+#Define site of interest
+site <- sites[1]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+#Start of record
+#Event 2
+temp$StartEvent[2] <- "4/4/2013"
+temp$EndEvent[2]   <- "5/6/2014"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+#Event 3
+temp$StartEvent[3] <- "4/4/2013"
+temp$EndEvent[3]   <- "5/6/2014"
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+#Event 4
+temp$StartEvent[4] <- "2/13/2014"
+temp$EndEvent[4]   <- "4/12/2015"
+fig_4 <- event_plot_fun(site, drying_events = temp[4,])
+#Event 5
+temp$StartEvent[5] <- "12/23/2014"
+temp$EndEvent[5]   <- "5/12/2016"
+fig_5 <- event_plot_fun(site, drying_events = temp[5,])
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+
+#Create plot
+fig_1 + fig_2 + fig_3 +fig_4 + fig_5
+```
+
+## 901NP9FLC
+
+```{r}
+#Define site of interest
+site <- sites[2]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+#Start of record
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+#Event 3
+temp$StartEvent[3] <- '11/16/2013'
+temp$EndEvent[3]   <- '6/8/2015'
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+#Event 4
+temp$StartEvent[4] <- "11/14/2014"
+temp$EndEvent[4]   <- "6/1/2016"
+fig_4 <- event_plot_fun(site, drying_events = temp[4,])
+#Event 5
+temp$StartEvent[5] <- "11/28/2015"
+temp$EndEvent[5]   <- "8/24/2017"
+fig_5 <- event_plot_fun(site, drying_events = temp[5,])
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+
+#Create plot
+fig_1 + fig_2 + fig_3 +fig_4 + fig_5
+```
+
+## 901NP9HJC
+
+```{r}
+#Define site of interest
+site <- sites[3]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- "12/5/2014"
+temp$EndEvent[1]   <- "4/20/2016"
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+
+#Create plot
+fig_1 
+```
+
+## 901NP9LCC
+
+```{r}
+#Define site of interest
+site <- sites[4]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "1/1/2016"
+temp$EndEvent[2]   <- "8/24/2017"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+
+#Create plot
+fig_1 + fig_2 
+```
+
+## 903ACPCT1
+
+```{r}
+#Define site of interest
+site <- sites[5]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[3] <- NA
+temp$EndEvent[3]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Event 2
+temp$StartEvent[4] <- "1/1/2016"
+temp$EndEvent[4]   <- "7/8/2017"
+fig_2 <- event_plot_fun(site, drying_events = temp[4,])
+
+#Create plot
+fig_1 + fig_2 
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 903FCPSPx
+
+```{r}
+#Define site of interest
+site <- sites[6]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+
+#Create plot
+fig_1 + fig_2 
+```
+
+## 903NP9LWF
+
+```{r}
+#Define site of interest
+site <- sites[7]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+
+#Create plot
+fig_1 + fig_2
+```
+
+## 903NP9LWF
+
+```{r}
+#Define site of interest
+site <- sites[8]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "3/1/2014"
+temp$EndEvent[2]   <- "3/20/2015"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- "3/1/2015"
+temp$EndEvent[3]   <- "3/21/2016"
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Create plot
+fig_1 + fig_2 + fig_3
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 903NP9UAC
+
+```{r}
+#Define site of interest
+site <- sites[9]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- NA
+temp$EndEvent[3]   <- NA
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Create plot
+fig_1 + fig_2
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 903NP9LWF
+
+```{r}
+#Define site of interest
+site <- sites[10]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- "2/21/2015"
+temp$EndEvent[1]   <- "5/28/2015"
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Create plot
+fig_1 + fig_2
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 903WE0798
+
+```{r}
+#Define site of interest
+site <- sites[11]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "4/8/2015"
+temp$EndEvent[2]   <- "6/26/2016"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Create plot
+fig_1 + fig_2
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 903WE0900
+
+```{r}
+#Define site of interest
+site <- sites[12]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "4/9/2015"
+temp$EndEvent[2]   <- "3/22/2016"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Create plot
+fig_1 + fig_2
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 905DGCC1x
+
+```{r}
+#Define site of interest
+site <- sites[13]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- "1/1/2016"
+temp$EndEvent[3]   <- "6/24/2017"
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Create plot
+fig_1 + fig_2 + fig_3
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 905SDBDN9
+
+```{r}
+#Define site of interest
+site <- sites[14]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "1/1/2015"
+temp$EndEvent[2]   <- "3/28/2016"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- NA
+temp$EndEvent[3]   <- NA
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Create plot
+fig_1 + fig_2 + fig_3
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 905WE0679
+
+```{r}
+#Define site of interest
+site <- sites[15]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- NA
+temp$EndEvent[3]   <- NA
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Create plot
+fig_1 + fig_2 + fig_3
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 909S00282
+
+```{r}
+#Define site of interest
+site <- sites[16]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "2/26/2015"
+temp$EndEvent[2]   <- "6/17/2016"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Create plot
+fig_1 + fig_2 
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+
+```
+
+## 909SWCASR
+
+```{r}
+#Define site of interest
+site <- sites[17]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- "3/1/2015"
+temp$EndEvent[1]   <- "6/3/2016"
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "12/20/2015"
+temp$EndEvent[2]   <- "8/5/2017"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Create plot
+fig_1 + fig_2 
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 911COPPER
+
+```{r}
+#Define site of interest
+site <- sites[18]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "12/15/2014"
+temp$EndEvent[2]   <- "4/1/2015"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- NA
+temp$EndEvent[3]   <- NA
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Create plot
+fig_1 + fig_2 + fig_3
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 911NP9ATC
+
+```{r}
+#Define site of interest
+site <- sites[19]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "11/5/2013"
+temp$EndEvent[2]   <- "6/14/2015"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- '11/30/2014'
+temp$EndEvent[3]   <- '4/19/2016'
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Create plot
+fig_1 + fig_2 + fig_3
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 911NP9UCW
+
+```{r}
+#Define site of interest
+site <- sites[20]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "11/16/2013"
+temp$EndEvent[2]   <- "7/2/2015"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- '11/19/2014'
+temp$EndEvent[3]   <- '5/31/2016'
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Event 4
+temp$StartEvent[4] <- '11/2/2015'
+temp$EndEvent[4]   <- '6/21/2017'
+fig_4 <- event_plot_fun(site, drying_events = temp[4,])
+
+#Create plot
+fig_1 + fig_2 + fig_3 + fig_4
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 911S00858
+
+```{r}
+#Define site of interest
+site <- sites[21]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- "1/6/2016"
+temp$EndEvent[2]   <- "9/20/2017"
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Create plot
+fig_1 + fig_2 
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 911S01142
+
+```{r}
+#Define site of interest
+site <- sites[22]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Create plot
+fig_1 + fig_2 
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 911TJKC1x
+
+```{r}
+#Define site of interest
+site <- sites[23]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 4
+temp$StartEvent[4] <- NA
+temp$EndEvent[4]   <- NA
+fig_4 <- event_plot_fun(site, drying_events = temp[4,])
+
+#Mannualy Define Storm
+#Event 5
+temp$StartEvent[5] <- "3/11/2015"
+temp$EndEvent[5]   <- "5/31/2016"
+fig_5 <- event_plot_fun(site, drying_events = temp[5,])
+
+#Mannualy Define Storm
+#Event 5
+temp$StartEvent[6] <- "12/22/2015"
+temp$EndEvent[6]   <- "9/27/2017"
+fig_6 <- event_plot_fun(site, drying_events = temp[6,])
+
+#Create plot
+fig_4 + fig_5 + fig_6
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
+
+## 911TJLCC2
+
+```{r}
+#Define site of interest
+site <- sites[24]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+
+#Mannualy Define Storm
+#Event 4
+temp$StartEvent[4] <- NA
+temp$EndEvent[4]   <- NA
+fig_4 <- event_plot_fun(site, drying_events = temp[4,])
+
+#Mannualy Define Storm
+#Event 5
+temp$StartEvent[5] <- "3/11/2015"
+temp$EndEvent[5]   <- "5/31/2016"
+fig_5 <- event_plot_fun(site, drying_events = temp[5,])
+
+#Mannualy Define Storm
+#Event 5
+temp$StartEvent[6] <- "12/22/2015"
+temp$EndEvent[6]   <- "9/27/2017"
+fig_6 <- event_plot_fun(site, drying_events = temp[6,])
+
+#Create plot
+fig_4 + fig_5 + fig_6
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+```
