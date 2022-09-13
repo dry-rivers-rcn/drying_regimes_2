@@ -6,7 +6,7 @@
 ################################################################################
 
 #Next steps: 
-#mannual set identification threshold for each gage. Include both major and moinor events
+#manual set identification threshold for each gage. Include both major and minor events
 #then, isolate storms [update to just include ressession and dry event before]
 #then, finally, calculate metrics
 
@@ -102,8 +102,8 @@ dygraph_ts_fun<-function(df, site){
 }
 
 #Plot
-dygraph_ts_fun(df = waterLevel, site=sites[1])
-dygraph_ts_fun(df = waterLevel, site=sites[2])
+dygraph_ts_fun(df = waterLevel, site=sites$site_id[1])
+Sdygraph_ts_fun(df = waterLevel, site=sites[2])
 
 ################################################################################
 #4.0 Estimate hydro metrics ----------------------------------------------------
