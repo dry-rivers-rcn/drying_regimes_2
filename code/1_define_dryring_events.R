@@ -192,7 +192,11 @@ fig_5 <- event_plot_fun(site, drying_events = temp[5,])
 
 #Create plot
 fig_1 + fig_2 + fig_3 +fig_4 + fig_5
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- temp
 
 #4.2 901NP9FLC -----------------------------------------------------------------
 #Define site of interest
@@ -232,7 +236,15 @@ fig_5 <- event_plot_fun(site, drying_events = temp[5,])
 
 #Create plot
 fig_1 + fig_2 + fig_3 +fig_4 + fig_5
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.3 901NP9HJC -----------------------------------------------------------------
 #Define site of interest
@@ -257,7 +269,11 @@ fig_1 <- event_plot_fun(site, drying_events = temp[1,])
 
 #Create plot
 fig_1 
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.4 901NP9LCC -----------------------------------------------------------------
 #Define site of interest
@@ -287,7 +303,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2 
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.5 903ACPCT1 -----------------------------------------------------------------
 #Define site of interest
@@ -317,7 +337,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[4,])
 
 #Create plot
 fig_1 + fig_2 
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.6 903FCPSPx -----------------------------------------------------------------
 #Define site of interest
@@ -347,7 +371,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2 
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.7 903NP9LWF -----------------------------------------------------------------
 #Define site of interest
@@ -377,7 +405,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.8 903NP9LWF -----------------------------------------------------------------
 #Define site of interest
@@ -412,7 +444,11 @@ fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Create plot
 fig_1 + fig_2 + fig_3
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.9 903NP9UAC -----------------------------------------------------------------
 #Define site of interest
@@ -446,7 +482,11 @@ fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Create plot
 fig_1 + fig_2
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.10 903NP9LWF -----------------------------------------------------------------
 #Define site of interest
@@ -475,7 +515,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.11 903WE0798 -----------------------------------------------------------------
 #Define site of interest
@@ -504,7 +548,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.12 903WE0900 -----------------------------------------------------------------
 #Define site of interest
@@ -533,7 +581,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.13 905DGCC1x -----------------------------------------------------------------
 #Define site of interest
@@ -567,7 +619,11 @@ fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Create plot
 fig_1 + fig_2 + fig_3
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.14 905SDBDN9 -----------------------------------------------------------------
 #Define site of interest
@@ -601,7 +657,11 @@ fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Create plot
 fig_1 + fig_2 + fig_3
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.15 905WE0679 -----------------------------------------------------------------
 #Define site of interest
@@ -635,7 +695,11 @@ fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Create plot
 fig_1 + fig_2 + fig_3
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.16 909S00282 -----------------------------------------------------------------
 #Define site of interest
@@ -664,7 +728,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2 
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.17 909SWCASR -----------------------------------------------------------------
 #Define site of interest
@@ -693,7 +761,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2 
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.18 911COPPER -----------------------------------------------------------------
 #Define site of interest
@@ -727,7 +799,11 @@ fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Create plot
 fig_1 + fig_2 + fig_3
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.19 911NP9ATC -----------------------------------------------------------------
 #Define site of interest
@@ -761,7 +837,11 @@ fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Create plot
 fig_1 + fig_2 + fig_3
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.20 911NP9UCW -----------------------------------------------------------------
 #Define site of interest
@@ -801,7 +881,11 @@ fig_4 <- event_plot_fun(site, drying_events = temp[4,])
 
 #Create plot
 fig_1 + fig_2 + fig_3 + fig_4
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.21 911S00858 -----------------------------------------------------------------
 #Define site of interest
@@ -830,7 +914,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2 
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.22 911S01142 -----------------------------------------------------------------
 #Define site of interest
@@ -859,7 +947,11 @@ fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Create plot
 fig_1 + fig_2 
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.23 911TJKC1x -----------------------------------------------------------------
 #Define site of interest
@@ -895,7 +987,11 @@ fig_6 <- event_plot_fun(site, drying_events = temp[6,])
 
 #Create plot
 fig_4 + fig_5 + fig_6
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
 
 #4.24 911TJLCC2 -----------------------------------------------------------------
 #Define site of interest
@@ -931,4 +1027,14 @@ fig_6 <- event_plot_fun(site, drying_events = temp[6,])
 
 #Create plot
 fig_4 + fig_5 + fig_6
-ggsave(paste0("temp/",site, ".png"))
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#5.0 Export --------------------------------------------------------------------
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Export start and stop
+write_csv(start_stop, "data//event_start_stop.csv")
