@@ -163,7 +163,7 @@ fun<-function(n){
     pull()
   
   #peak2sample duration
-  peak2sample_duration <- peak_date-sampling_date
+  peak2sample_duration <- sampling_date - peak_date
   peak2sample_duration <- peak2sample_duration %>% paste %>% as.numeric
   
   #Peak2Sample Slope
