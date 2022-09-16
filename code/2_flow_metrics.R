@@ -123,7 +123,8 @@ fun<-function(n){
   peak_date <- wL %>% 
     filter(day>dry_date) %>%
     filter(day<sampling_date) %>% 
-    summarise(day = max(day,na.rm=T)) %>% 
+    filter(waterLevel == max(waterLevel, na.rm=T)) %>% 
+    summarise(day = min(day,na.rm=T)) %>% 
     pull() %>% 
     as.POSIXct(., format = "%Y-%m-%d") 
    
