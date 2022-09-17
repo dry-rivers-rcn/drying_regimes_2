@@ -805,7 +805,7 @@ fig_1 + fig_2 + fig_3
 temp$site  <- site
 start_stop <- bind_rows(start_stop, temp)
 
-#4.18 911COPPER -----------------------------------------------------------------
+#4.19 911KCKCRx -----------------------------------------------------------------
 #Define site of interest
 site <- sites[19]
 
