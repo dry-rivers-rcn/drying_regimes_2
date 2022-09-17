@@ -97,6 +97,10 @@ fun<-function(n){
     group_by(day) %>% 
     summarise(waterLevel = mean(waterLevel, na.rm=T))
   
+  #For testing
+  test_plot<-wL %>% ggplot() + geom_line(aes(x=day, y = waterLevel))
+  test_plot
+  
   #Find longest dry period and delete everything before it 
   wL <- wL %>% 
     #Define zeros
@@ -108,6 +112,8 @@ fun<-function(n){
     mutate(dry_event = cumsum(dry_start))
   
   period<- wL %>%   
+    #Filter to zeros
+    filter(waterLevel==0) %>% 
     #Estimate length of groups
     group_by(dry_event) %>% 
     summarise(count = n()) %>% 
