@@ -805,9 +805,47 @@ fig_1 + fig_2 + fig_3
 temp$site  <- site
 start_stop <- bind_rows(start_stop, temp)
 
-#4.19 911NP9ATC -----------------------------------------------------------------
+#4.18 911COPPER -----------------------------------------------------------------
 #Define site of interest
 site <- sites[19]
+
+#Create temporary 
+temp <- events %>% 
+  filter(site_id == site) %>% 
+  select(SampleDate) %>% 
+  mutate(StartEvent = NA, EndEvent = NA)
+temp
+
+#Plot interactive polt
+dygraph_ts_fun(waterLevel, site)
+
+#Mannualy Define Storm
+#Event 1
+temp$StartEvent[1] <- NA
+temp$EndEvent[1]   <- NA
+fig_1 <- event_plot_fun(site, drying_events = temp[1,])
+
+#Event 2
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
+fig_2 <- event_plot_fun(site, drying_events = temp[2,])
+
+#Event 3
+temp$StartEvent[3] <- '2/25/2015'
+temp$EndEvent[3]   <- '6/10/2016'
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
+
+#Create plot
+fig_1 + fig_2 + fig_3
+#ggsave(paste0("temp/",site, ".png"))
+
+#Add start and end date to master df
+temp$site  <- site
+start_stop <- bind_rows(start_stop, temp)
+
+#4.20 911NP9ATC -----------------------------------------------------------------
+#Define site of interest
+site <- sites[20]
 
 #Create temporary 
 temp <- events %>% 
@@ -843,9 +881,9 @@ fig_1 + fig_2 + fig_3
 temp$site  <- site
 start_stop <- bind_rows(start_stop, temp)
 
-#4.20 911NP9UCW -----------------------------------------------------------------
+#4.21 911NP9UCW -----------------------------------------------------------------
 #Define site of interest
-site <- sites[20]
+site <- sites[21]
 
 #Create temporary 
 temp <- events %>% 
@@ -887,9 +925,9 @@ fig_1 + fig_2 + fig_3 + fig_4
 temp$site  <- site
 start_stop <- bind_rows(start_stop, temp)
 
-#4.21 911S00858 -----------------------------------------------------------------
+#4.22 911S00858 -----------------------------------------------------------------
 #Define site of interest
-site <- sites[21]
+site <- sites[22]
 
 #Create temporary 
 temp <- events %>% 
@@ -920,9 +958,9 @@ fig_1 + fig_2
 temp$site  <- site
 start_stop <- bind_rows(start_stop, temp)
 
-#4.22 911S01142 -----------------------------------------------------------------
+#4.23 911S01142 -----------------------------------------------------------------
 #Define site of interest
-site <- sites[22]
+site <- sites[23]
 
 #Create temporary 
 temp <- events %>% 
@@ -953,9 +991,9 @@ fig_1 + fig_2
 temp$site  <- site
 start_stop <- bind_rows(start_stop, temp)
 
-#4.23 911TJKC1x -----------------------------------------------------------------
+#4.24 911TJKC1x -----------------------------------------------------------------
 #Define site of interest
-site <- sites[23]
+site <- sites[24]
 
 #Create temporary 
 temp <- events %>% 
@@ -993,9 +1031,9 @@ fig_4 + fig_5 + fig_6
 temp$site  <- site
 start_stop <- bind_rows(start_stop, temp)
 
-#4.24 911TJLCC2 -----------------------------------------------------------------
+#4.25 911TJLCC2 -----------------------------------------------------------------
 #Define site of interest
-site <- sites[24]
+site <- sites[25]
 
 #Create temporary 
 temp <- events %>% 
