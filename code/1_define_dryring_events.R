@@ -902,23 +902,27 @@ temp$EndEvent[1]   <- NA
 fig_1 <- event_plot_fun(site, drying_events = temp[1,])
 
 #Event 2
-temp$StartEvent[2] <- "11/16/2013"
-temp$EndEvent[2]   <- "7/2/2015"
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
 fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Event 3
-temp$StartEvent[3] <- '11/19/2014'
-temp$EndEvent[3]   <- '5/31/2016'
+temp$StartEvent[3] <- '11/16/2013'
+temp$EndEvent[3]   <- '7/2/2015'
 fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Event 4
-temp$StartEvent[4] <- '11/2/2015'
-temp$EndEvent[4]   <- '6/21/2017'
-fig_4 <- event_plot_fun(site, drying_events = temp[4,])
+temp$StartEvent[4] <- '11/19/2014'
+temp$EndEvent[4]   <- '6/2/2016'
+fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
+#Event 5
+temp$StartEvent[5] <- '11/2/2015'
+temp$EndEvent[5]   <- '7/30/2017'
+fig_5 <- event_plot_fun(site, drying_events = temp[5,])
 
 #Create plot
-fig_1 + fig_2 + fig_3 + fig_4
+fig_1 + fig_2 + fig_3 + fig_4 + fig_5
 #ggsave(paste0("temp/",site, ".png"))
 
 #Add start and end date to master df
