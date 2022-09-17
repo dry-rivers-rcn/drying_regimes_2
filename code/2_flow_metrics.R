@@ -98,18 +98,22 @@ fun<-function(n){
     summarise(waterLevel = mean(waterLevel, na.rm=T))
   
   #For testing
-  wL %>% ggplot() + geom_line(aes(x=day, y = waterLevel))
+  test_plot<-wL %>% ggplot() + geom_line(aes(x=day, y = waterLevel))
   
   #Calculate metrics ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Define sampling date
-  sampling_date <- as.POSIXct(event$SampleDate, format="%m/%d/%Y")
+  sampling_date <- mdy(event$SampleDate)
+  test_plot<-test_plot + geom_vline(aes(xintercept = ymd(sampling_date)), col='red')
+  test_plot
   
   #Determine first day of drying
   dry_date <- wL %>% 
     filter(waterLevel == 0) %>% 
     summarise(day = min(day, na.rm=T)) %>% 
-    pull() %>% 
-    as.POSIXct(., format = "%Y-%m-%d")
+    pull() %>% ymd(.)
+    as.POSIXct(., format = "%Y-%m-%d") 
+  test_plot<-test_plot + geom_vline(aes(xintercept = (dry_date)), col='red')
+  test_plot
   
   #Determine rewet date
   rewet_date <- wL %>% 
