@@ -826,13 +826,13 @@ temp$EndEvent[1]   <- NA
 fig_1 <- event_plot_fun(site, drying_events = temp[1,])
 
 #Event 2
-temp$StartEvent[2] <- "11/5/2013"
-temp$EndEvent[2]   <- "6/14/2015"
+temp$StartEvent[2] <- NA
+temp$EndEvent[2]   <- NA
 fig_2 <- event_plot_fun(site, drying_events = temp[2,])
 
 #Event 3
-temp$StartEvent[3] <- '11/30/2014'
-temp$EndEvent[3]   <- '4/19/2016'
+temp$StartEvent[3] <- '11/5/2013'
+temp$EndEvent[3]   <- '6/15/2015'
 fig_3 <- event_plot_fun(site, drying_events = temp[3,])
 
 #Create plot
