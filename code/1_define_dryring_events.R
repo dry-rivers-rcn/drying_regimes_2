@@ -1075,4 +1075,4 @@ start_stop <- bind_rows(start_stop, temp)
 #5.0 Export --------------------------------------------------------------------
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Export start and stop
-write_csv(start_stop, "data//event_start_stop.csv")
+write_csv(start_stop, "docs//event_start_stop.csv")
