@@ -22,7 +22,7 @@ library(patchwork)
 
 #Define events
 events <- read_csv("data//event_dates.csv")
-start_stop <- read_csv("data//event_start_stop.csv")
+start_stop <- read_csv("docs//event_start_stop.csv")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #2.0 Download logger data ------------------------------------------------------
