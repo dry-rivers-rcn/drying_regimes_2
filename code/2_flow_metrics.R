@@ -1,5 +1,5 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Title: Flow metric calculatin
+#Title: Flow metric calculation
 #Date: 9/13/2022
 #Coder: Nate Jones
 #Purpose: Calculate Flow Metrics
